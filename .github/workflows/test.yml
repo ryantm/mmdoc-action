@@ -1,0 +1,41 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  defaults:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Run with no inputs
+        id: docs
+        uses: ./
+      - name: Verify default output
+        env:
+          OUTPUT_PATH: ${{ steps.docs.outputs.path }}
+        run: |
+          test "$OUTPUT_PATH" = "$GITHUB_WORKSPACE/out"
+          test -s out/multi/index.html
+          test -s out/single/index.html
+          grep -F '<title>mmdoc-action</title>' out/single/index.html
+
+  configured:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Run with all inputs
+        uses: ./
+        with:
+          project-name: Custom Project
+          src: .
+          out: custom-output
+      - name: Verify configured output
+        run: |
+          test -s custom-output/multi/index.html
+          grep -F '<title>Custom Project</title>' custom-output/single/index.html

@@ -1,0 +1,58 @@
+name: Update mmdoc
+
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: update-mmdoc
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check latest release
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          latest="$(gh api repos/ryantm/mmdoc/releases/latest --jq .tag_name)"
+          current="$(tr -d '[:space:]' < MMDOC_VERSION)"
+          printf 'latest=%s\n' "$latest" >> "$GITHUB_OUTPUT"
+          if [[ "$latest" != "$current" ]]; then
+            echo 'changed=true' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open update pull request
+        if: steps.version.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LATEST: ${{ steps.version.outputs.latest }}
+        run: |
+          branch="automation/mmdoc-$LATEST"
+          existing="$(gh pr list --head "$branch" --state all --json url --jq '.[0].url // empty')"
+          if [[ -n "$existing" ]]; then
+            echo "An update pull request already exists or existed: $existing"
+            exit 0
+          fi
+
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git switch -c "$branch"
+          printf '%s\n' "$LATEST" > MMDOC_VERSION
+          git add MMDOC_VERSION
+          git commit -m "chore: update mmdoc to $LATEST"
+          git push origin "$branch"
+          gh pr create \
+            --base main \
+            --head "$branch" \
+            --title "chore: update mmdoc to $LATEST" \
+            --body "Updates the pinned mmdoc release to [$LATEST](https://github.com/ryantm/mmdoc/releases/tag/$LATEST)."

@@ -1,0 +1,57 @@
+name: Build docs with mmdoc
+author: ryantm
+description: Generate single-page and multi-page HTML documentation with mmdoc
+
+inputs:
+  project-name:
+    description: Project/site name; defaults to the repository name
+    required: false
+    default: ''
+  src:
+    description: Directory containing toc.md and the Markdown source files
+    required: false
+    default: .
+  out:
+    description: Directory where mmdoc writes its output
+    required: false
+    default: out
+
+outputs:
+  path:
+    description: Absolute path to the generated output directory
+    value: ${{ steps.mmdoc.outputs.path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install Nix
+      uses: cachix/install-nix-action@v31.11.0
+
+    - name: Run mmdoc
+      id: mmdoc
+      shell: bash
+      env:
+        INPUT_PROJECT_NAME: ${{ inputs.project-name }}
+        INPUT_SRC: ${{ inputs.src }}
+        INPUT_OUT: ${{ inputs.out }}
+      run: |
+        set -euo pipefail
+
+        project_name="$INPUT_PROJECT_NAME"
+        if [[ -z "$project_name" ]]; then
+          project_name="${GITHUB_REPOSITORY##*/}"
+        fi
+
+        mmdoc_version="$(tr -d '[:space:]' < "$GITHUB_ACTION_PATH/MMDOC_VERSION")"
+        nix run "github:ryantm/mmdoc/$mmdoc_version" -- \
+          "$project_name" "$INPUT_SRC" "$INPUT_OUT"
+
+        output_path="$INPUT_OUT"
+        if [[ "$output_path" != /* ]]; then
+          output_path="$GITHUB_WORKSPACE/$output_path"
+        fi
+        printf 'path=%s\n' "$output_path" >> "$GITHUB_OUTPUT"
+
+branding:
+  icon: book-open
+  color: blue
