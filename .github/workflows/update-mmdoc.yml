@@ -31,6 +31,19 @@ jobs:
             echo 'changed=true' >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Install Nix
+        if: steps.version.outputs.changed == 'true'
+        uses: cachix/install-nix-action@v31.11.0
+
+      - name: Test new mmdoc release
+        if: steps.version.outputs.changed == 'true'
+        env:
+          LATEST: ${{ steps.version.outputs.latest }}
+        run: |
+          nix run "github:ryantm/mmdoc/$LATEST" -- mmdoc-action . out
+          test -s out/multi/index.html
+          test -s out/single/index.html
+
       - name: Open update pull request
         if: steps.version.outputs.changed == 'true'
         env:

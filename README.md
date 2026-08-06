@@ -86,7 +86,7 @@ The action exposes the absolute generated directory as the `path` output.
 
 ## mmdoc version updates
 
-The action pins the mmdoc version recorded in [`MMDOC_VERSION`](MMDOC_VERSION). A daily workflow checks the latest `ryantm/mmdoc` release and opens a pull request when an update is available. Dependabot separately updates the GitHub Actions used by this repository.
+The action pins the mmdoc version recorded in [`MMDOC_VERSION`](MMDOC_VERSION). A daily workflow checks the latest `ryantm/mmdoc` release, tests it, and opens a pull request when an update is available. After that pull request is merged, another workflow moves the stable `v1` tag to the tested update. Dependabot separately updates the GitHub Actions used by this repository.
 
 ## Runner support
 
