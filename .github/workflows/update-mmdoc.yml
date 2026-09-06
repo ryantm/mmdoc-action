@@ -33,7 +33,7 @@ jobs:
 
       - name: Install Nix
         if: steps.version.outputs.changed == 'true'
-        uses: cachix/install-nix-action@v31.11.0
+        uses: cachix/install-nix-action@v31.11.1
 
       - name: Test new mmdoc release
         if: steps.version.outputs.changed == 'true'
